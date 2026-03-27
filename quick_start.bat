@@ -1,24 +1,23 @@
-﻿@echo off
-chcp 65001 >nul
+@echo off
 cls
 
 :menu
 cls
 echo ========================================
-echo    微信小程序抓包工具 - 快速启动
+echo   WeChat Mini Program File Sniffer
 echo ========================================
 echo.
-echo  1. 启动 HTTPS 解密代理
-echo  2. 下载捕获的文件
-echo  3. 查看捕获的文件列表
-echo  4. 查看本机 IP 地址
-echo  5. 安装依赖（首次使用必选）
-echo  6. 查看使用说明
-echo  0. 退出
+echo  1. Start HTTPS Proxy
+echo  2. Download Files
+echo  3. List Captured Files
+echo  4. Show Local IP
+echo  5. Install Dependencies (First Time)
+echo  6. Help
+echo  0. Exit
 echo.
 echo ========================================
 
-set /p choice="请选择操作 (0-6): "
+set /p choice="Select (0-6): "
 
 if "%choice%"=="1" goto start_https_proxy
 if "%choice%"=="2" goto download_files
@@ -28,24 +27,24 @@ if "%choice%"=="5" goto install_deps
 if "%choice%"=="6" goto show_help
 if "%choice%"=="0" goto end
 
-echo 无效的选择，请重试
+echo Invalid choice, try again...
 timeout /t 2 >nul
 goto menu
 
 :start_https_proxy
 cls
-echo [*] 启动 HTTPS 解密代理...
-echo [*] 首次使用请先安装依赖（选项5）并在手机安装证书
+echo [*] Starting HTTPS proxy...
+echo [*] First time? Install dependencies (Option 5) and certificate first
 echo.
 python start_https_proxy.py
 echo.
-echo 代理服务器已停止
+echo Proxy stopped
 pause
 goto menu
 
 :download_files
 cls
-echo [*] 启动文件下载工具...
+echo [*] Starting file downloader...
 echo.
 python file_downloader.py
 echo.
@@ -54,7 +53,7 @@ goto menu
 
 :list_files
 cls
-echo [*] 查看捕获的文件列表...
+echo [*] Listing captured files...
 echo.
 python file_downloader.py --list
 echo.
@@ -63,14 +62,14 @@ goto menu
 
 :get_ip
 cls
-echo [*] 获取本机 IP 地址...
+echo [*] Getting local IP address...
 echo.
 python get_ip.py
 goto menu
 
 :install_deps
 cls
-echo [*] 安装依赖（mitmproxy）...
+echo [*] Installing dependencies (mitmproxy)...
 echo.
 call install_https.bat
 goto menu
@@ -78,29 +77,25 @@ goto menu
 :show_help
 cls
 echo ========================================
-echo            使用说明
+echo            Quick Guide
 echo ========================================
 echo.
-echo 使用步骤:
-echo ================================
-echo 1. 选择菜单项 5 - 安装依赖
-echo 2. 选择菜单项 1 - 启动 HTTPS 解密代理
-echo 3. 配置手机代理（服务器=电脑IP, 端口=8888）
-echo 4. 手机浏览器访问 http://mitm.it 安装证书
-echo    - Android: 还需在"信任的凭据-用户"中启用
-echo    - iOS: 还需在"证书信任设置"中启用
-echo 5. 使用微信小程序，触发文件下载
-echo 6. 电脑终端会显示捕获的文件
-echo 7. 停止代理后，选择菜单项 2 下载文件
+echo Steps:
+echo 1. Install dependencies (Option 5)
+echo 2. Start HTTPS proxy (Option 1)
+echo 3. Configure phone proxy: PC_IP:8888
+echo 4. Install certificate: http://mitm.it
+echo    - Android: Enable in Settings - Security - Trusted Credentials - User
+echo    - iOS: Enable in Settings - General - About - Certificate Trust
+echo 5. Use WeChat Mini Program and download files
+echo 6. Stop proxy and download files (Option 2)
 echo.
-echo 详细步骤请查看: HTTPS抓包指南.md
-echo.
-echo 详细说明请查看 README.md
+echo For details: See README.md
 echo ========================================
 echo.
 pause
 goto menu
 
 :end
-echo 感谢使用！
+echo Thanks for using!
 exit

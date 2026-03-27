@@ -1,22 +1,21 @@
-﻿@echo off
-chcp 65001 >nul
+@echo off
 cls
 echo ========================================
-echo      GitHub 快速推送工具
+echo      GitHub Push Tool
 echo ========================================
 echo.
 
-REM 检查是否已配置远程仓库
+REM Check remote
 git remote -v >nul 2>&1
 if %errorlevel% equ 0 (
     git remote -v | findstr "origin" >nul
     if %errorlevel% equ 0 (
-        echo [*] 检测到已配置的远程仓库:
+        echo [*] Remote repository found:
         git remote -v
         echo.
-        set /p continue="是否继续推送？(y/n): "
+        set /p continue="Continue pushing? (y/n): "
         if /i not "%continue%"=="y" (
-            echo 已取消
+            echo Cancelled
             pause
             exit /b 0
         )
@@ -24,58 +23,58 @@ if %errorlevel% equ 0 (
     )
 )
 
-echo [1] 配置远程仓库
+echo [1] Configure Remote Repository
 echo.
-echo 请先在 GitHub 创建新仓库（不要初始化 README）
-echo 访问: https://github.com/new
+echo Create a new repo on GitHub (without README)
+echo Visit: https://github.com/new
 echo.
 
-set /p username="输入你的 GitHub 用户名: "
-set /p reponame="输入仓库名称 (默认: WeCrawler): "
+set /p username="GitHub username: "
+set /p reponame="Repository name (default: WeCrawler): "
 
 if "%reponame%"=="" set reponame=WeCrawler
 
 echo.
-echo [*] 配置远程仓库...
+echo [*] Configuring remote...
 git branch -M main
 git remote add origin https://github.com/%username%/%reponame%.git
 
 echo.
-echo [2] 推送代码到 GitHub
+echo [2] Push to GitHub
 echo.
-echo 即将推送到: https://github.com/%username%/%reponame%
+echo Pushing to: https://github.com/%username%/%reponame%
 echo.
-echo 提示: 密码请使用 GitHub Personal Access Token
-echo 获取 Token: https://github.com/settings/tokens
+echo NOTE: Use Personal Access Token as password
+echo Get Token: https://github.com/settings/tokens
 echo.
 pause
 
 :push_code
 echo.
-echo [*] 正在推送代码...
+echo [*] Pushing...
 git push -u origin main
 
 if %errorlevel% equ 0 (
     echo.
     echo ========================================
-    echo        推送成功！
+    echo        Push Successful!
     echo ========================================
     echo.
-    echo 访问你的仓库:
+    echo Visit your repository:
     git remote get-url origin
     echo.
 ) else (
     echo.
     echo ========================================
-    echo        推送失败
+    echo        Push Failed
     echo ========================================
     echo.
-    echo 可能的原因:
-    echo 1. 仓库不存在（先在 GitHub 创建）
-    echo 2. 凭据错误（需要使用 Personal Access Token）
-    echo 3. 网络问题
+    echo Possible reasons:
+    echo 1. Repository not exists (create on GitHub first)
+    echo 2. Wrong credentials (use Personal Access Token)
+    echo 3. Network issues
     echo.
-    echo 详细说明请查看: GitHub推送指南.md
+    echo See README.md for details
     echo.
 )
 
