@@ -11,17 +11,25 @@
 - ✅ 提供调试工具帮助排查问题
 - ✅ 跨平台支持（Windows/Linux/macOS）
 
-## 🚀 快速开始（3步解决HTTPS问题）
+## 🚀 快速开始
 
-### 步骤 1: 安装依赖
+### 方法一：使用图形菜单（推荐新手）
+
+```cmd
+quick_start.bat
+```
+
+按菜单提示操作即可。
+
+### 方法二：命令行
+
+#### 步骤 1: 安装依赖
 
 ```cmd
 install_https.bat
 ```
 
-或使用快速启动菜单，选择"8. 安装 HTTPS 代理依赖"
-
-### 步骤 2: 启动 HTTPS 解密代理
+#### 步骤 2: 启动代理
 
 ```cmd
 python start_https_proxy.py
@@ -29,7 +37,7 @@ python start_https_proxy.py
 
 记下显示的 IP 地址（如 192.168.1.100）
 
-### 步骤 3: 配置手机并安装证书
+#### 步骤 3: 配置手机并安装证书
 
 **配置代理：**
 - 服务器/主机名: `192.168.1.100` (电脑IP)
@@ -52,40 +60,29 @@ python start_https_proxy.py
 
 ## 📂 文件说明
 
-### 🔥 主要文件（HTTPS解密）
-
 | 文件 | 说明 |
 |------|------|
 | `start_https_proxy.py` | ⭐ HTTPS解密代理启动脚本 |
 | `mitm_sniffer.py` | mitmproxy 抓包脚本 |
-| `install_https.bat` | HTTPS 依赖安装脚本 |
 | `file_downloader.py` | 文件下载工具 |
+| `install_https.bat` | 依赖安装脚本 |
+| `quick_start.bat` | 图形化启动菜单 |
+| `get_ip.py` | 查看本机IP工具 |
+| `push_to_github.bat` | GitHub推送工具 |
+| `HTTPS抓包指南.md` | ⭐ 详细使用教程 |
+| `GitHub推送指南.md` | GitHub操作指南 |
 
-### 🛠️ 辅助工具
+## 🎯 工作原理
 
-| 文件 | 说明 |
-|------|------|
-| `proxy_sniffer_debug.py` | HTTP调试代理（不能抓HTTPS内容）|
-| `get_ip.py` | 查看本机IP地址 |
-| `test_proxy.py` | 测试代理连接 |
-| `quick_start.bat` | Windows 图形化菜单 |
+本工具使用 **mitmproxy** 作为中间人代理，通过以下步骤解密HTTPS流量：
 
-### 📖 文档
+1. 拦截手机的网络请求
+2. 使用自签名证书解密HTTPS内容
+3. 分析请求和响应，识别文件下载
+4. 记录文件URL和请求头
+5. 提供下载工具获取文件
 
-| 文件 | 说明 |
-|------|------|
-| `HTTPS抓包指南.md` | ⭐ 详细的证书安装和使用教程 |
-| `手机配置指南.md` | 各品牌手机代理配置 |
-| `问题排查.md` | 常见问题解决方案 |
-
-## 🎯 两种方案对比
-
-| 方案 | 适用场景 | HTTPS支持 | 需要证书 |
-|------|---------|-----------|---------|
-| **HTTPS 解密代理** | 微信小程序（推荐） | ✅ 完全支持 | ✅ 必须安装 |
-| **HTTP 调试代理** | HTTP网站、网络调试 | ❌ 仅域名 | ❌ 不需要 |
-
-> ⚠️ **重要**: 微信小程序必须使用 HTTPS 解密代理！
+> ⚠️ **重要**: 必须在手机上安装并信任证书才能解密HTTPS！
 
 ## 📱 证书安装重点
 
@@ -131,16 +128,9 @@ python file_downloader.py --url "https://example.com/file.pdf"
 python file_downloader.py --list
 ```
 
-### 其他工具
+### 查看本机IP
 ```cmd
-# 查看本机IP
 python get_ip.py
-
-# 测试代理连接
-python test_proxy.py
-
-# HTTP调试代理（显示所有请求）
-python proxy_sniffer_debug.py
 ```
 
 ## 📋 完整检查清单
@@ -187,16 +177,14 @@ python proxy_sniffer_debug.py
 - Windows: `C:\Users\用户名\.mitmproxy\mitmproxy-ca-cert.cer`
 - 发送到手机手动安装
 
-### Q4: 能上网但没有日志输出？
+### Q4: 能上网但捕获不到文件？
 
-运行调试版查看：
-```cmd
-python proxy_sniffer_debug.py
-```
+**检查**:
+1. 证书是否正确安装并信任
+2. 手机浏览器访问 `https://www.baidu.com` 测试
+3. 如果浏览器正常但小程序不行 → 见Q1
 
-如果浏览器有日志但小程序没有 → 证书未正确安装
-
-更多问题: [问题排查.md](问题排查.md) | [HTTPS抓包指南.md](HTTPS抓包指南.md)
+更多问题请查看: [HTTPS抓包指南.md](HTTPS抓包指南.md)
 
 ## 🔒 安全提示
 
@@ -260,15 +248,12 @@ quick_start.bat
 ```
 
 菜单选项：
-1. 启动 HTTPS 解密代理 ⭐
-2. 启动 HTTP 调试代理
-3. 下载捕获的文件
-4. 查看捕获列表
-5. 查看本机IP
-6. 测试代理连接
-7. 安装 HTTP 依赖
-8. 安装 HTTPS 依赖 ⭐ (首次必选)
-9. 查看帮助
+1. 启动 HTTPS 解密代理
+2. 下载捕获的文件
+3. 查看捕获列表
+4. 查看本机IP
+5. 安装依赖 ⭐ (首次必选)
+6. 查看帮助
 
 ---
 

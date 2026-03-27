@@ -3,7 +3,8 @@
     "allow": [
       "Bash(dir:*)",
       "Bash(del /f \"D:\\\\gitspace\\\\WeCrawler\\\\README.md\")",
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(git add:*)"
     ]
   }
 }
