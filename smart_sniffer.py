@@ -157,9 +157,12 @@ class SmartFileSniffer:
             # 解析 JSON
             json_data = json.loads(response.content.decode('utf-8'))
 
+            # 调试：显示所有JSON API
+            ctx.log.info(f"\n[DEBUG] JSON API: {url[:80]}")
+
             # 检查是否是文件列表 API
             if self.looks_like_file_list_api(url, json_data):
-                ctx.log.info(f"\n🔍 发现疑似文件列表API: {url}")
+                ctx.log.warn(f"\n🔍 发现疑似文件列表API: {url}")
 
                 # 提取文件信息
                 file_items = self.extract_file_items(json_data)
@@ -182,9 +185,12 @@ class SmartFileSniffer:
 
                     # 自动下载列表中的所有文件
                     self.auto_download_file_list(list_data)
+            else:
+                # 调试：显示为什么不是文件列表
+                ctx.log.info(f"[DEBUG] 不是文件列表 - 检查URL关键词和数据结构")
 
         except Exception as e:
-            pass
+            ctx.log.error(f"[DEBUG] JSON解析错误: {e}")
 
     def handle_html_response(self, flow):
         """处理 HTML 响应，提取文件链接"""
@@ -207,16 +213,24 @@ class SmartFileSniffer:
 
     def looks_like_file_list_api(self, url, json_data):
         """判断是否是文件列表 API"""
-        # 检查 URL 中的关键词
+        # 先尝试提取文件，如果能提取到就认为是文件列表
+        file_items = self.extract_file_items(json_data)
+        if len(file_items) > 0:
+            ctx.log.info(f"[DEBUG] 从JSON提取到 {len(file_items)} 个文件项")
+            return True
+
+        # 检查 URL 中的关键词（作为辅助判断）
         url_lower = url.lower()
         has_keyword = any(keyword in url_lower for keyword in self.api_keywords)
 
         if not has_keyword:
+            ctx.log.info(f"[DEBUG] URL无关键词且无文件数据")
             return False
 
         # 检查 JSON 结构
         # 通常文件列表 API 返回数组或包含数组的对象
         if isinstance(json_data, list) and len(json_data) > 0:
+            ctx.log.info(f"[DEBUG] JSON是数组，长度 {len(json_data)}")
             return True
 
         if isinstance(json_data, dict):
@@ -226,8 +240,10 @@ class SmartFileSniffer:
                 if field in json_data:
                     value = json_data[field]
                     if isinstance(value, list) and len(value) > 0:
+                        ctx.log.info(f"[DEBUG] 找到数据字段 '{field}'，包含 {len(value)} 项")
                         return True
 
+        ctx.log.info(f"[DEBUG] 有URL关键词但结构不匹配")
         return False
 
     def extract_file_items(self, json_data):

@@ -102,12 +102,18 @@ class AutoCrawler:
             try:
                 json_data = json.loads(response.content.decode('utf-8'))
 
+                # 调试：显示所有JSON API
+                ctx.log.info(f"\n[DEBUG] JSON API: {url[:100]}")
+
                 # 分析是否是文件列表API
                 if self.is_file_list_api(url, json_data):
+                    ctx.log.warn(f"\n[AUTO CRAWLER] 发现文件列表API")
                     self.learn_api_pattern(url, request, json_data)
+                else:
+                    ctx.log.info(f"[DEBUG] 不匹配 - URL无关键词或无文件数据")
 
-            except:
-                pass
+            except Exception as e:
+                ctx.log.error(f"[DEBUG] JSON解析错误: {e}")
 
         # 处理直接的文件下载
         elif self.is_file_download(url, content_type, response):
@@ -115,16 +121,23 @@ class AutoCrawler:
 
     def is_file_list_api(self, url, json_data):
         """判断是否是文件列表API"""
+        # 先尝试提取文件，如果能提取到就认为是文件列表
+        files = self.extract_file_list(json_data)
+        if len(files) > 0:
+            ctx.log.info(f"[DEBUG] 从JSON提取到 {len(files)} 个文件")
+            return True
+
         url_lower = url.lower()
 
-        # 检查URL关键词
+        # 检查URL关键词（作为辅助判断）
         has_keyword = any(kw in url_lower for kw in self.list_keywords)
         if not has_keyword:
+            ctx.log.info(f"[DEBUG] URL无关键词且无文件数据")
             return False
 
-        # 检查响应结构
-        files = self.extract_file_list(json_data)
-        return len(files) > 0
+        # 有关键词但没提取到文件，可能是空列表，也返回True
+        ctx.log.info(f"[DEBUG] URL有关键词，但提取不到文件")
+        return False
 
     def learn_api_pattern(self, url, request, json_data):
         """学习API模式"""
