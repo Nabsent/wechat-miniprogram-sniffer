@@ -4,38 +4,42 @@
 
 ## ✨ 特性
 
+- 🤖 **智能自动化** - 自动识别文件列表API，一键下载所有文件
 - ✅ **支持 HTTPS 解密** - 可以抓取微信小程序的加密请求
 - ✅ 自动捕获文件下载链接（PDF、图片、视频、Office 文档等）
-- ✅ 保留完整请求头信息用于下载
+- ✅ 会话保持（自动处理 cookies/token）
 - ✅ 支持批量下载和选择性下载
-- ✅ 提供调试工具帮助排查问题
+- ✅ 提供两种模式：智能自动 + 手动控制
 - ✅ 跨平台支持（Windows/Linux/macOS）
 
 ## 🚀 快速开始
 
-### 方法一：使用图形菜单（推荐新手）
+### ⭐ 推荐：智能自动模式
+
+一次操作，自动下载所有文件！
 
 ```cmd
+# 方法一：图形菜单
 quick_start.bat
+# 选择 1 - Start Smart Proxy (Auto Download)
+
+# 方法二：命令行
+python start_smart_proxy.py
 ```
 
-按菜单提示操作即可。
+**工作流程：**
+1. 手机配置代理并安装证书
+2. 打开微信小程序，浏览文件列表
+3. 系统自动识别文件列表API
+4. 自动解析并下载所有文件到 `auto_downloads/`
 
-### 方法二：命令行
-
-#### 步骤 1: 安装依赖
-
-```cmd
-install_https.bat
-```
-
-#### 步骤 2: 启动代理
+### 手动模式
 
 ```cmd
 python start_https_proxy.py
 ```
 
-记下显示的 IP 地址（如 192.168.1.100）
+手动选择要下载的文件。
 
 #### 步骤 3: 配置手机并安装证书
 
@@ -60,17 +64,24 @@ python start_https_proxy.py
 
 ## 📂 文件说明
 
+### 核心脚本
+
 | 文件 | 说明 |
 |------|------|
-| `start_https_proxy.py` | ⭐ HTTPS解密代理启动脚本 |
-| `mitm_sniffer.py` | mitmproxy 抓包脚本 |
-| `file_downloader.py` | 文件下载工具 |
-| `install_https.bat` | 依赖安装脚本 |
+| `start_smart_proxy.py` | ⭐ 智能代理（自动下载所有文件）|
+| `smart_sniffer.py` | 智能分析器（API识别+自动下载）|
+| `start_https_proxy.py` | HTTPS代理（手动模式）|
+| `mitm_sniffer.py` | 基础抓包脚本 |
+| `file_downloader.py` | 手动下载工具 |
+
+### 辅助工具
+
+| 文件 | 说明 |
+|------|------|
 | `quick_start.bat` | 图形化启动菜单 |
-| `get_ip.py` | 查看本机IP工具 |
-| `push_to_github.bat` | GitHub推送工具 |
-| `HTTPS抓包指南.md` | ⭐ 详细使用教程 |
-| `GitHub推送指南.md` | GitHub操作指南 |
+| `install_https.bat` | 依赖安装脚本 |
+| `get_ip.py` | 查看本机IP |
+| `setup_windows_proxy.py` | Windows系统代理配置 |
 
 ## 🎯 工作原理
 

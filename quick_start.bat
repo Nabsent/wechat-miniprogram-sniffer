@@ -7,34 +7,47 @@ echo ========================================
 echo   WeChat Mini Program File Sniffer
 echo ========================================
 echo.
-echo  1. Start HTTPS Proxy
-echo  2. Download Files
-echo  3. List Captured Files
-echo  4. Show Local IP
-echo  5. Install Dependencies (First Time)
-echo  6. Help
+echo  1. Start Smart Proxy (Auto Download)
+echo  2. Start HTTPS Proxy (Manual)
+echo  3. Download Files
+echo  4. List Captured Files
+echo  5. Show Local IP
+echo  6. Install Dependencies (First Time)
+echo  7. Help
 echo  0. Exit
 echo.
 echo ========================================
 
-set /p choice="Select (0-6): "
+set /p choice="Select (0-7): "
 
-if "%choice%"=="1" goto start_https_proxy
-if "%choice%"=="2" goto download_files
-if "%choice%"=="3" goto list_files
-if "%choice%"=="4" goto get_ip
-if "%choice%"=="5" goto install_deps
-if "%choice%"=="6" goto show_help
+if "%choice%"=="1" goto start_smart_proxy
+if "%choice%"=="2" goto start_https_proxy
+if "%choice%"=="3" goto download_files
+if "%choice%"=="4" goto list_files
+if "%choice%"=="5" goto get_ip
+if "%choice%"=="6" goto install_deps
+if "%choice%"=="7" goto show_help
 if "%choice%"=="0" goto end
 
 echo Invalid choice, try again...
 timeout /t 2 >nul
 goto menu
 
+:start_smart_proxy
+cls
+echo [*] Starting Smart Proxy (Auto Download)...
+echo [*] Files will be automatically downloaded to: auto_downloads/
+echo.
+python start_smart_proxy.py
+echo.
+echo Proxy stopped
+pause
+goto menu
+
 :start_https_proxy
 cls
-echo [*] Starting HTTPS proxy...
-echo [*] First time? Install dependencies (Option 5) and certificate first
+echo [*] Starting HTTPS proxy (Manual Mode)...
+echo [*] First time? Install dependencies (Option 6) and certificate first
 echo.
 python start_https_proxy.py
 echo.
@@ -80,15 +93,19 @@ echo ========================================
 echo            Quick Guide
 echo ========================================
 echo.
-echo Steps:
-echo 1. Install dependencies (Option 5)
-echo 2. Start HTTPS proxy (Option 1)
+echo Recommended: Smart Proxy Mode (Auto Download)
+echo 1. Install dependencies (Option 6)
+echo 2. Start Smart Proxy (Option 1)
 echo 3. Configure phone proxy: PC_IP:8888
 echo 4. Install certificate: http://mitm.it
 echo    - Android: Enable in Settings - Security - Trusted Credentials - User
 echo    - iOS: Enable in Settings - General - About - Certificate Trust
-echo 5. Use WeChat Mini Program and download files
-echo 6. Stop proxy and download files (Option 2)
+echo 5. Use WeChat Mini Program and browse file list
+echo 6. Files will be automatically downloaded!
+echo.
+echo Manual Mode:
+echo 1. Start HTTPS Proxy (Option 2)
+echo 2. Manually download files (Option 3)
 echo.
 echo For details: See README.md
 echo ========================================
