@@ -7,30 +7,43 @@ echo ========================================
 echo   WeChat Mini Program File Sniffer
 echo ========================================
 echo.
-echo  1. Start Smart Proxy (Auto Download)
-echo  2. Start HTTPS Proxy (Manual)
-echo  3. Download Files
-echo  4. List Captured Files
-echo  5. Show Local IP
-echo  6. Install Dependencies (First Time)
-echo  7. Help
+echo  1. Auto Crawler (Fully Automatic) - Recommended
+echo  2. Smart Proxy (Auto Download)
+echo  3. HTTPS Proxy (Manual)
+echo  4. Download Files
+echo  5. List Captured Files
+echo  6. Show Local IP
+echo  7. Install Dependencies (First Time)
+echo  8. Help
 echo  0. Exit
 echo.
 echo ========================================
 
-set /p choice="Select (0-7): "
+set /p choice="Select (0-8): "
 
-if "%choice%"=="1" goto start_smart_proxy
-if "%choice%"=="2" goto start_https_proxy
-if "%choice%"=="3" goto download_files
-if "%choice%"=="4" goto list_files
-if "%choice%"=="5" goto get_ip
-if "%choice%"=="6" goto install_deps
-if "%choice%"=="7" goto show_help
+if "%choice%"=="1" goto start_auto_crawler
+if "%choice%"=="2" goto start_smart_proxy
+if "%choice%"=="3" goto start_https_proxy
+if "%choice%"=="4" goto download_files
+if "%choice%"=="5" goto list_files
+if "%choice%"=="6" goto get_ip
+if "%choice%"=="7" goto install_deps
+if "%choice%"=="8" goto show_help
 if "%choice%"=="0" goto end
 
 echo Invalid choice, try again...
 timeout /t 2 >nul
+goto menu
+
+:start_auto_crawler
+cls
+echo [*] Starting Auto Crawler (Fully Automatic)...
+echo [*] You just open the mini program, system does the rest!
+echo.
+python start_auto_crawler.py
+echo.
+echo Crawler stopped
+pause
 goto menu
 
 :start_smart_proxy
@@ -93,15 +106,17 @@ echo ========================================
 echo            Quick Guide
 echo ========================================
 echo.
-echo Recommended: Smart Proxy Mode (Auto Download)
-echo 1. Install dependencies (Option 6)
-echo 2. Start Smart Proxy (Option 1)
+echo Best: Auto Crawler (Fully Automatic)
+echo 1. Install dependencies (Option 7)
+echo 2. Start Auto Crawler (Option 1)
 echo 3. Configure phone proxy: PC_IP:8888
 echo 4. Install certificate: http://mitm.it
-echo    - Android: Enable in Settings - Security - Trusted Credentials - User
-echo    - iOS: Enable in Settings - General - About - Certificate Trust
-echo 5. Use WeChat Mini Program and browse file list
-echo 6. Files will be automatically downloaded!
+echo 5. Open WeChat mini program and click into file list
+echo 6. System automatically crawls ALL pages and downloads ALL files!
+echo.
+echo You only need to: Open mini program, Click once
+echo System will: Learn API, Auto paginate, Download everything
+echo.
 echo.
 echo Manual Mode:
 echo 1. Start HTTPS Proxy (Option 2)

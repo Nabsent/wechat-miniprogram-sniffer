@@ -4,42 +4,52 @@
 
 ## ✨ 特性
 
-- 🤖 **智能自动化** - 自动识别文件列表API，一键下载所有文件
-- ✅ **支持 HTTPS 解密** - 可以抓取微信小程序的加密请求
-- ✅ 自动捕获文件下载链接（PDF、图片、视频、Office 文档等）
-- ✅ 会话保持（自动处理 cookies/token）
-- ✅ 支持批量下载和选择性下载
-- ✅ 提供两种模式：智能自动 + 手动控制
+- 🤖 **全自动爬虫** - 您只需打开小程序点一次，系统自动翻页下载所有文件
+- 🎓 **API学习** - 自动识别分页模式（page/pageSize/totalPages等）
+- 🔄 **自动翻页** - 智能构造请求，遍历所有页面
+- 🔐 **会话保持** - 自动处理 cookies/token/authorization
+- ✅ **HTTPS解密** - 完整支持加密流量分析
+- 📥 **批量下载** - 一次操作下载所有文件
 - ✅ 跨平台支持（Windows/Linux/macOS）
 
 ## 🚀 快速开始
 
-### ⭐ 推荐：智能自动模式
+### ⭐⭐⭐ 最佳：全自动爬虫
 
-一次操作，自动下载所有文件！
+**您只需点一次，系统自动完成所有工作！**
 
 ```cmd
 # 方法一：图形菜单
 quick_start.bat
-# 选择 1 - Start Smart Proxy (Auto Download)
+# 选择 1 - Auto Crawler (Fully Automatic)
 
 # 方法二：命令行
+python start_auto_crawler.py
+```
+
+**使用流程：**
+```
+您: 打开小程序 → 点击"文件列表"
+
+系统自动:
+  🎓 学习API结构
+  📊 分析分页信息（共5页，50个文件）
+  📖 自动翻页获取所有数据
+  💾 批量下载所有文件
+  ✅ 完成！
+```
+
+### 其他模式
+
+**智能代理**（自动下载当前页）
+```cmd
 python start_smart_proxy.py
 ```
 
-**工作流程：**
-1. 手机配置代理并安装证书
-2. 打开微信小程序，浏览文件列表
-3. 系统自动识别文件列表API
-4. 自动解析并下载所有文件到 `auto_downloads/`
-
-### 手动模式
-
+**手动模式**（精确控制）
 ```cmd
 python start_https_proxy.py
 ```
-
-手动选择要下载的文件。
 
 #### 步骤 3: 配置手机并安装证书
 
@@ -68,11 +78,12 @@ python start_https_proxy.py
 
 | 文件 | 说明 |
 |------|------|
-| `start_smart_proxy.py` | ⭐ 智能代理（自动下载所有文件）|
-| `smart_sniffer.py` | 智能分析器（API识别+自动下载）|
-| `start_https_proxy.py` | HTTPS代理（手动模式）|
+| `start_auto_crawler.py` | ⭐⭐⭐ 全自动爬虫（自动翻页+批量下载）|
+| `auto_crawler.py` | 爬虫引擎（API学习+分页+下载）|
+| `start_smart_proxy.py` | 智能代理（当前页自动下载）|
+| `smart_sniffer.py` | 智能分析器 |
+| `start_https_proxy.py` | 基础HTTPS代理 |
 | `mitm_sniffer.py` | 基础抓包脚本 |
-| `file_downloader.py` | 手动下载工具 |
 
 ### 辅助工具
 
