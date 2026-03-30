@@ -266,8 +266,7 @@ class AutoCrawler:
                 file_info = {}
 
                 # URL字段
-                for key in ['url', 'fileUrl', 'file_url', 'downloadUrl', 'download_url',
-                           'link', 'path', 'href', 'src', 'address']:
+                for key in ['url', 'fileUrl', 'file_url', 'downloadUrl', 'download_url', 'link', 'path']:
                     if key in obj and isinstance(obj[key], str):
                         file_info['url'] = obj[key]
                         break
@@ -284,13 +283,23 @@ class AutoCrawler:
                         file_info['size'] = obj[key]
                         break
 
+                # 文件类型
+                for key in ['type', 'fileType', 'file_type', 'contentType', 'mimeType', 'ext', 'extension']:
+                    if key in obj:
+                        file_info['type'] = obj[key]
+                        break
+
                 # ID（用于构造URL）
                 for key in ['id', 'fileId', 'file_id']:
                     if key in obj:
                         file_info['id'] = obj[key]
                         break
 
-                if 'url' in file_info or 'id' in file_info:
+                # 严格验证：必须是真正的文件
+                if 'url' in file_info and self._is_valid_file_url(file_info, obj):
+                    files.append(file_info)
+                elif 'id' in file_info:
+                    # 如果只有ID没有URL，暂时保留（后续可能需要构造URL）
                     files.append(file_info)
 
                 # 递归查找
@@ -303,6 +312,49 @@ class AutoCrawler:
 
         find_files(json_data)
         return files
+
+    def _is_valid_file_url(self, file_info, original_obj):
+        """验证是否是有效的文件URL"""
+        url = file_info.get('url', '').lower()
+
+        # 排除空URL
+        if not url or len(url) < 5:
+            return False
+
+        # 排除明显不是文件的URL
+        exclude_patterns = [
+            'javascript:', 'data:', 'blob:', 'about:',  # 协议
+            '/api/', '/v1/', '/v2/',  # API端点
+            'avatar', 'icon', 'logo', 'thumb',  # 图标/头像
+            '.html', '.htm', '.jsp', '.php', '.asp',  # 网页
+        ]
+        for pattern in exclude_patterns:
+            if pattern in url:
+                return False
+
+        # 验证1: URL包含文件扩展名
+        has_file_extension = any(ext in url for ext in self.file_extensions)
+
+        # 验证2: 有文件大小（说明是真实文件）
+        has_size = 'size' in file_info and file_info['size']
+
+        # 验证3: 有明确的文件名
+        has_filename = 'name' in file_info and file_info['name']
+
+        # 验证4: 对象包含文件相关字段
+        file_related_keys = ['fileUrl', 'fileName', 'fileSize', 'fileType', 'downloadUrl', 'file_url', 'file_name', 'file_size']
+        has_file_field = any(key in original_obj for key in file_related_keys)
+
+        # 满足以下条件之一即可：
+        # 1. 有文件扩展名 + (有大小 或 有文件名)
+        # 2. 有文件相关字段 + 有文件名
+        if has_file_extension and (has_size or has_filename):
+            return True
+        if has_file_field and has_filename:
+            return True
+
+        ctx.log.info(f"[DEBUG] 过滤URL: {url[:50]} (无文件特征)")
+        return False
 
     def auto_crawl_all_pages(self, api_pattern):
         """自动爬取所有分页（在线程池中执行，不阻塞代理）"""

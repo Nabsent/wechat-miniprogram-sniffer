@@ -260,16 +260,16 @@ class SmartFileSniffer:
                 file_info = {}
 
                 # URL 字段
-                url_fields = ['url', 'fileUrl', 'file_url', 'downloadUrl', 'download_url', 'link', 'path', 'src']
+                url_fields = ['url', 'fileUrl', 'file_url', 'downloadUrl', 'download_url', 'link', 'path']
                 for field in url_fields:
-                    if field in obj:
+                    if field in obj and isinstance(obj[field], str):
                         file_info['url'] = obj[field]
                         break
 
                 # 文件名字段
                 name_fields = ['name', 'fileName', 'file_name', 'title', 'filename']
                 for field in name_fields:
-                    if field in obj:
+                    if field in obj and isinstance(obj[field], str):
                         file_info['name'] = obj[field]
                         break
 
@@ -280,8 +280,15 @@ class SmartFileSniffer:
                         file_info['size'] = obj[field]
                         break
 
-                # 如果找到了 URL，认为是一个文件项
-                if 'url' in file_info:
+                # 文件类型字段
+                type_fields = ['type', 'fileType', 'file_type', 'contentType', 'mimeType', 'ext', 'extension']
+                for field in type_fields:
+                    if field in obj:
+                        file_info['type'] = obj[field]
+                        break
+
+                # 严格验证：必须是真正的文件
+                if 'url' in file_info and self._is_valid_file_url(file_info, obj):
                     file_items.append(file_info)
 
                 # 继续递归
@@ -294,6 +301,49 @@ class SmartFileSniffer:
 
         find_files(json_data)
         return file_items
+
+    def _is_valid_file_url(self, file_info, original_obj):
+        """验证是否是有效的文件URL"""
+        url = file_info.get('url', '').lower()
+
+        # 排除空URL
+        if not url or len(url) < 5:
+            return False
+
+        # 排除明显不是文件的URL
+        exclude_patterns = [
+            'javascript:', 'data:', 'blob:', 'about:',  # 协议
+            '/api/', '/v1/', '/v2/',  # API端点
+            'avatar', 'icon', 'logo', 'thumb',  # 图标/头像
+            '.html', '.htm', '.jsp', '.php', '.asp',  # 网页
+        ]
+        for pattern in exclude_patterns:
+            if pattern in url:
+                return False
+
+        # 验证1: URL包含文件扩展名
+        has_file_extension = any(ext in url for ext in self.file_extensions)
+
+        # 验证2: 有文件大小（说明是真实文件）
+        has_size = 'size' in file_info and file_info['size']
+
+        # 验证3: 有明确的文件名
+        has_filename = 'name' in file_info and file_info['name']
+
+        # 验证4: 对象包含文件相关字段
+        file_related_keys = ['fileUrl', 'fileName', 'fileSize', 'fileType', 'downloadUrl', 'file_url', 'file_name', 'file_size']
+        has_file_field = any(key in original_obj for key in file_related_keys)
+
+        # 满足以下条件之一即可：
+        # 1. 有文件扩展名 + (有大小 或 有文件名)
+        # 2. 有文件相关字段 + 有文件名
+        if has_file_extension and (has_size or has_filename):
+            return True
+        if has_file_field and has_filename:
+            return True
+
+        ctx.log.info(f"[DEBUG] 过滤URL: {url[:50]} (无文件特征)")
+        return False
 
     def auto_download_file(self, file_info, content=None):
         """自动下载文件（异步执行，不阻塞代理）"""
