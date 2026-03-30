@@ -15,6 +15,8 @@ from datetime import datetime
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from pathlib import Path
 from copy import deepcopy
+from concurrent.futures import ThreadPoolExecutor
+import threading
 
 class AutoCrawler:
     def __init__(self):
@@ -34,6 +36,11 @@ class AutoCrawler:
         self.download_dir = 'auto_downloads'
         self.log_file = 'crawler_log.json'
         self.auto_crawl_enabled = True  # 是否自动爬取
+
+        # 线程池用于异步下载和翻页，避免阻塞代理
+        self.executor = ThreadPoolExecutor(max_workers=5)
+        self.crawl_tasks = []
+        self.download_lock = threading.Lock()
 
         Path(self.download_dir).mkdir(exist_ok=True)
 
@@ -150,10 +157,11 @@ class AutoCrawler:
             ctx.log.info(f"   📄 分页信息: {pagination}")
             ctx.log.info(f"   📊 总数: {api_pattern['total_count']}")
 
-        # 自动爬取
+        # 异步自动爬取（不阻塞代理）
         if self.auto_crawl_enabled:
-            ctx.log.warn(f"\n🚀 开始自动爬取...")
-            self.auto_crawl_all_pages(api_pattern)
+            ctx.log.warn(f"\n🚀 已提交爬取任务到后台执行...")
+            task = self.executor.submit(self.auto_crawl_all_pages, api_pattern)
+            self.crawl_tasks.append(task)
 
     def detect_pagination(self, url, json_data):
         """检测分页模式"""
@@ -284,7 +292,7 @@ class AutoCrawler:
         return files
 
     def auto_crawl_all_pages(self, api_pattern):
-        """自动爬取所有分页"""
+        """自动爬取所有分页（在线程池中执行，不阻塞代理）"""
         pagination = api_pattern.get('pagination')
 
         if not pagination:
@@ -307,6 +315,7 @@ class AutoCrawler:
             return
 
         ctx.log.info(f"   📖 共 {total_pages} 页，当前第 {current_page} 页")
+        ctx.log.info(f"   🔄 后台爬取中，代理继续正常工作...")
 
         # 下载第一页
         all_files = list(api_pattern['files'])
@@ -334,7 +343,7 @@ class AutoCrawler:
 
         ctx.log.warn(f"\n📊 爬取完成！共 {len(all_files)} 个文件")
 
-        # 批量下载
+        # 批量下载（异步）
         self.download_file_list(all_files, api_pattern['host'])
 
     def build_page_url(self, base_url, page_param, page):
@@ -375,11 +384,8 @@ class AutoCrawler:
             return []
 
     def download_file_list(self, files, host):
-        """批量下载文件"""
-        ctx.log.warn(f"\n💾 开始下载 {len(files)} 个文件...")
-
-        success = 0
-        failed = 0
+        """批量下载文件（异步执行）"""
+        ctx.log.warn(f"\n💾 已提交 {len(files)} 个文件到下载队列...")
 
         for idx, file_info in enumerate(files, 1):
             url = file_info.get('url')
@@ -387,7 +393,6 @@ class AutoCrawler:
                 # 尝试从ID构造URL
                 file_id = file_info.get('id')
                 if file_id:
-                    # 这里需要根据具体API构造下载URL
                     ctx.log.warn(f"   [{idx}/{len(files)}] 文件ID: {file_id}（需要构造下载URL）")
                 continue
 
@@ -405,22 +410,22 @@ class AutoCrawler:
             filename = file_info.get('name', f'file_{idx}')
             size = file_info.get('size', 'unknown')
 
-            ctx.log.info(f"   [{idx}/{len(files)}] {filename} ({self.format_size(size)})")
+            # 提交到线程池异步下载
+            task = self.executor.submit(self.download_file, url, filename, host, idx, len(files), size)
+            self.crawl_tasks.append(task)
 
-            if self.download_file(url, filename, host):
-                success += 1
-                self.downloaded_files.add(url)
-            else:
-                failed += 1
+    def download_file(self, url, filename, host, index=None, total=None, size='unknown'):
+        """下载单个文件（在线程池中执行）"""
+        # 跳过已下载
+        with self.download_lock:
+            if url in self.downloaded_files:
+                return True
+            self.downloaded_files.add(url)
 
-            time.sleep(0.3)  # 避免请求过快
-
-        ctx.log.warn(f"\n✅ 下载完成: {success} 成功, {failed} 失败")
-        ctx.log.warn(f"📂 保存位置: {os.path.abspath(self.download_dir)}")
-
-    def download_file(self, url, filename, host):
-        """下载单个文件"""
         try:
+            if index and total:
+                ctx.log.info(f"   [{index}/{total}] {filename} ({self.format_size(size)})")
+
             session_data = self.session_data.get(host, {})
 
             headers = {
@@ -452,6 +457,7 @@ class AutoCrawler:
                     if chunk:
                         f.write(chunk)
 
+            ctx.log.info(f"       ✅ 已保存")
             return True
 
         except Exception as e:
@@ -547,6 +553,29 @@ class AutoCrawler:
 
     def done(self):
         """保存日志"""
+        # 等待所有爬取和下载任务完成
+        if self.crawl_tasks:
+            ctx.log.info(f"\n⏳ 等待 {len(self.crawl_tasks)} 个后台任务完成...")
+
+            # 等待所有任务完成
+            success = 0
+            failed = 0
+            for task in self.crawl_tasks:
+                try:
+                    result = task.result(timeout=120)  # 每个任务最多等待120秒
+                    if result:
+                        success += 1
+                    else:
+                        failed += 1
+                except Exception as e:
+                    ctx.log.error(f"任务执行失败: {e}")
+                    failed += 1
+
+            ctx.log.info(f"✅ 所有任务已完成: {success} 成功, {failed} 失败")
+
+        # 关闭线程池
+        self.executor.shutdown(wait=True)
+
         summary = {
             'learned_apis': self.file_list_apis,
             'downloaded_count': len(self.downloaded_files),

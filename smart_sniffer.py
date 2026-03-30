@@ -16,6 +16,8 @@ import requests
 from datetime import datetime
 from urllib.parse import urlparse, unquote, parse_qs
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+import threading
 
 class SmartFileSniffer:
     def __init__(self):
@@ -26,6 +28,11 @@ class SmartFileSniffer:
         self.log_file = 'captured_data.json'
         self.session_cookies = {}
         self.session_headers = {}
+
+        # 线程池用于异步下载，避免阻塞代理
+        self.executor = ThreadPoolExecutor(max_workers=5)
+        self.download_tasks = []
+        self.download_lock = threading.Lock()
 
         # 创建下载目录
         Path(self.download_dir).mkdir(exist_ok=True)
@@ -273,7 +280,7 @@ class SmartFileSniffer:
         return file_items
 
     def auto_download_file(self, file_info, content=None):
-        """自动下载文件"""
+        """自动下载文件（异步执行，不阻塞代理）"""
         filename = file_info['filename']
 
         # 清理文件名
@@ -281,6 +288,17 @@ class SmartFileSniffer:
 
         # 如果已经有内容（从响应中获取），直接保存
         if content:
+            # 提交到线程池异步保存
+            task = self.executor.submit(self._save_file_content, filename, content)
+            self.download_tasks.append(task)
+        else:
+            # 需要发起新的下载请求（异步执行）
+            task = self.executor.submit(self.download_from_url, file_info)
+            self.download_tasks.append(task)
+
+    def _save_file_content(self, filename, content):
+        """在线程池中执行的文件保存"""
+        try:
             file_path = Path(self.download_dir) / filename
 
             # 避免重复
@@ -295,17 +313,16 @@ class SmartFileSniffer:
                 f.write(content)
 
             ctx.log.info(f"   💾 保存到: {file_path}")
-        else:
-            # 需要发起新的下载请求
-            self.download_from_url(file_info)
+        except Exception as e:
+            ctx.log.error(f"   ❌ 保存失败: {e}")
 
     def auto_download_file_list(self, list_data):
-        """自动下载文件列表中的所有文件"""
+        """自动下载文件列表中的所有文件（异步执行）"""
         files = list_data['files']
         host = list_data['host']
         headers = list_data['headers']
 
-        ctx.log.warn(f"\n🚀 开始自动下载 {len(files)} 个文件...")
+        ctx.log.warn(f"\n🚀 已提交 {len(files)} 个文件到下载队列...")
 
         for idx, file_item in enumerate(files, 1):
             try:
@@ -316,24 +333,27 @@ class SmartFileSniffer:
                 if not url.startswith('http'):
                     url = f"https://{host}{url}" if url.startswith('/') else f"https://{host}/{url}"
 
-                ctx.log.info(f"[{idx}/{len(files)}] {filename}")
-
-                # 下载
-                self.download_from_url({
+                # 提交到线程池异步下载
+                task = self.executor.submit(self.download_from_url, {
                     'url': url,
                     'filename': filename,
                     'headers': headers,
-                    'host': host
+                    'host': host,
+                    'index': idx,
+                    'total': len(files)
                 })
+                self.download_tasks.append(task)
 
             except Exception as e:
-                ctx.log.error(f"   ❌ 下载失败: {e}")
+                ctx.log.error(f"   ❌ 提交下载任务失败: {e}")
 
     def download_from_url(self, file_info):
-        """从 URL 下载文件"""
+        """从 URL 下载文件（在线程池中执行）"""
         url = file_info['url']
         filename = file_info.get('filename', 'download')
         headers = file_info.get('headers', {})
+        index = file_info.get('index')
+        total = file_info.get('total')
 
         try:
             # 构建请求头
@@ -347,6 +367,10 @@ class SmartFileSniffer:
             for key, value in headers.items():
                 if key.lower() in ['cookie', 'authorization', 'token', 'referer']:
                     download_headers[key] = value
+
+            # 显示开始下载
+            if index and total:
+                ctx.log.info(f"[{index}/{total}] 下载: {filename}")
 
             # 发送请求
             response = requests.get(url, headers=download_headers, timeout=30, stream=True)
@@ -372,7 +396,7 @@ class SmartFileSniffer:
             ctx.log.info(f"   ✅ 已下载: {file_path}")
 
         except Exception as e:
-            ctx.log.error(f"   ❌ 下载失败: {e}")
+            ctx.log.error(f"   ❌ 下载失败 [{filename}]: {e}")
 
     def extract_filename(self, url, response):
         """提取文件名"""
@@ -446,6 +470,23 @@ class SmartFileSniffer:
 
     def done(self):
         """代理停止时调用"""
+        # 等待所有下载任务完成
+        if self.download_tasks:
+            ctx.log.info(f"\n⏳ 等待 {len(self.download_tasks)} 个下载任务完成...")
+
+            # 等待所有任务完成
+            for task in self.download_tasks:
+                try:
+                    task.result(timeout=60)  # 每个任务最多等待60秒
+                except Exception as e:
+                    ctx.log.error(f"任务执行失败: {e}")
+
+            ctx.log.info("✅ 所有下载任务已完成")
+
+        # 关闭线程池
+        self.executor.shutdown(wait=True)
+
+        # 保存日志
         self.save_logs()
 
         total_files = len(self.captured_urls)
