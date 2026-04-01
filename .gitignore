@@ -34,8 +34,11 @@ env/
 
 # 捕获的数据（不提交到git）
 captured_urls.json
+captured_data.json
+crawler_log.json
 captured_files/
 downloaded_files/
+auto_downloads/
 *.log
 all_requests.log
 
